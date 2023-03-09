@@ -1,0 +1,76 @@
+https://rapidapi.com/kiann/api/kiann_options_sabr
+
+###########
+# this is an example jupyter notebook/python file to demonstrate the usage of the 3 commands (sabr_hist, sabr_log, sabr_fit) in the 
+# rapidAPI listing : https://rapidapi.com/kiann/api/kiann_options_sabr
+
+try:
+    import fastapi
+    import uvicorn
+except:
+    !pip install fastapi
+    !pip install uvicorn
+    import fastapi
+    import uvicorn
+
+import ast
+import sys
+print(sys.version)
+import socket
+import numpy as np
+import pandas as pd
+import datetime as dt
+import matplotlib.pyplot as plt
+import requests
+import json
+from urllib.parse import urlencode
+
+import requests
+
+%matplotlib inline
+
+hostname = socket.gethostname()
+ip_address = socket.gethostbyname(hostname)
+
+print(f"Hostname: {hostname}")
+print(f"IP Address: {ip_address}")
+
+# first we load the allowed past history of calibrated sabr lognormal parameters. Note they were calibrated
+# versus beta = 0.9
+
+url = "https://kiann_options_sabr.p.rapidapi.com/sabr_hist"
+querystring = {"ret_":"0","ccy_":"btc"}
+headers = {
+"X-RapidAPI-Key": <your rapid api key>,
+"X-RapidAPI-Host": "kiann_options_sabr.p.rapidapi.com"
+}
+
+data_ = pd.DataFrame(requests.request("GET", url, headers=headers, params=querystring).json())
+
+
+# take the latest timestamp of sabr btc parameters.
+# take your selected expiryData
+
+display(data_[data_.timestamp == data_.timestamp.unique()[-1]])
+res_ = data_[(data_.timestamp == data_.timestamp.unique()[-1])&(data_.expiryDate == data_.expiryDate[6])]
+
+###### this example is to show the generated implied vols using the sabr parameters
+url = "https://kiann_options_sabr.p.rapidapi.com/sabr_log"
+# create a range of strikes
+strikes_ = np.arange(int(res_.fwd.values[0]*0.7), int(res_.fwd.values[0]*1.7), int(res_.fwd.values[0]*0.1)) 
+vols_ = []
+for k_ in strikes_:
+    querystring = {"K_": k_,"fwd_": res_.fwd.values[0],"shift_":0.0,\
+               "time_":res_.expiry.values[0], "alpha": res_.alpha.values[0],\
+                "beta": 0.9, "rho": res_.rhol.values[0],"volvol":res_.volvol.values[0],"ret_":1,"method_":"1"}
+    vol_ = requests.request("GET", url, headers=headers, params=querystring).json()
+    vols_.append(vol_)
+    
+plt.plot(strikes_, vols_)
+
+# this block here shows, when we re-use those vols/strikes, we get back the sabr parameters.
+url = "https://kiann_options_sabr.p.rapidapi.com/sabr_calib"
+querystring = {"fwd_":res_.fwd.values[0],"shift_": 0.0 ,"time_": res_.expiry.values[0],"beta":0.9,\
+               "k_": strikes_,"vols_": vols_,"ret_":0}
+calib = requests.request("GET", url, headers=headers, params=querystring)
+print('the calibrated parameters are', calib.json())
