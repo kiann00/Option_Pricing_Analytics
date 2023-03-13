@@ -1,0 +1,74 @@
+import requests
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+url = "https://kiann_options_exotics.p.rapidapi.com/Barrier"
+querystring = {"div_":"0.0","strike_":"1.0","fwd_":"1.0","rf_":"0.0","vol_":"0.3","type_":"Call",\
+               "type_Barrier":"UpOut","H_strike":"1.3","digital_":"0","sign_":"1",\
+               "time_":"1m","date_":"25-12-2022","arg_":"NPV","ret_":"0"}
+
+headers = {
+"X-RapidAPI-Key": <your API key>,
+"X-RapidAPI-Host": "kiann_options_exotics.p.rapidapi.com"
+}
+
+fwds_ = np.arange(0.7, 1.3, 0.05)
+barrier_npv_ = []
+barrier_delta_ = []
+barrier_gamma_ = []
+barrier_vega_ = []
+
+for fwd_ in fwds_:
+    querystring = {"div_":"0.0","strike_":"1.0","fwd_": fwd_,"rf_":"0.0","vol_":"0.3","type_":"Call",\
+               "type_Barrier":"UpOut","H_strike":"1.3","digital_":"0","sign_":"1",\
+               "time_":"1m","date_":"25-12-2022","arg_":"NPV","ret_":"1"}
+
+    try:
+        value_ = requests.request("GET", url, headers=headers, params=querystring).json()
+    except:
+        value_ = 0.0 # this is because the barrier touched
+    barrier_npv_.append(value_)
+ 
+    querystring = {"div_":"0.0","strike_":"1.0","fwd_": fwd_,"rf_":"0.0","vol_":"0.3","type_":"Call",\
+               "type_Barrier":"UpOut","H_strike":"1.3","digital_":"0","sign_":"1",\
+               "time_":"1m","date_":"25-12-2022","arg_":"delta","ret_":"1"}
+
+    try:
+        value_ = requests.request("GET", url, headers=headers, params=querystring).json()
+    except:
+        value_ = 0.0 # this is because the barrier touched
+    barrier_delta_.append(value_)
+    
+    querystring = {"div_":"0.0","strike_":"1.0","fwd_": fwd_,"rf_":"0.0","vol_":"0.3","type_":"Call",\
+               "type_Barrier":"UpOut","H_strike":"1.3","digital_":"0","sign_":"1",\
+               "time_":"1m","date_":"25-12-2022","arg_":"gamma","ret_":"1"}
+
+    try:
+        value_ = requests.request("GET", url, headers=headers, params=querystring).json()
+    except:
+        value_ = 0.0 # this is because the barrier touched
+    barrier_gamma_.append(value_)
+    
+    querystring = {"div_":"0.0","strike_":"1.0","fwd_": fwd_,"rf_":"0.0","vol_":"0.3","type_":"Call",\
+               "type_Barrier":"UpOut","H_strike":"1.3","digital_":"0","sign_":"1",\
+               "time_":"1m","date_":"25-12-2022","arg_":"vega","ret_":"1"}
+
+    try:
+        value_ = requests.request("GET", url, headers=headers, params=querystring).json()
+    except:
+        value_ = 0.0 # this is because the barrier touched
+    barrier_vega_.append(value_)
+
+    
+plt.show()
+plt.plot(fwds_, barrier_npv_)
+
+plt.show()
+plt.plot(fwds_, barrier_delta_)
+
+plt.show()
+plt.plot(fwds_, barrier_gamma_)
+
+plt.show()
+plt.plot(fwds_, barrier_vega_)
